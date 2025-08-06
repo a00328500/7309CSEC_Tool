@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(CURL REQUIRED)
+find_dependency(Jsoncpp REQUIRED)
+
+if(@ENABLE_WINDOWS_EVTX@)
+    find_dependency(LibEvtx REQUIRED)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/CyberLogSummarizerTargets.cmake")
