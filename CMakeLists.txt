@@ -14,9 +14,9 @@ include_directories(
 
 add_executable(log_summarizer
     src/main.cpp
-    src/logParser.cpp
-    src/ollamaClient.cpp
-    src/securityAnalyzer.cpp
+    src/log_parser.cpp
+    src/ollama_client.cpp
+    src/security_analyzer.cpp
     src/summarizer.cpp
 )
 
