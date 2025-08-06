@@ -33,8 +33,11 @@ private:
     std::string logContent;
     LogType currentType;
 
-    std::vector<std::string> splitSyslogLine(const std::string& line);
+    // Add these method declarations
+    void extractSyslogDetails(LogEntry& entry);
+    int estimateWindowsEventSeverity(int eventId);
     bool isWindowsEventLog(const std::string& content);
+    std::vector<std::string> splitSyslogLine(const std::string& line);
 };
 
 #endif // LOG_PARSER_H
