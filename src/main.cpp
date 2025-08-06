@@ -1,54 +1,60 @@
 #include <iostream>
-#include <fstream>
+#include <string>
 #include "logParser.h"
-#include "securityAnalyzer.h"
-#include "summarizer.h"
 #include "ollamaClient.h"
+#include "reportGenerator.h"
+
+void printHelp() {
+    std::cout << "Log Summarizer Bot - Cybersecurity Analysis Tool\n";
+    std::cout << "Usage:\n";
+    std::cout << "  logsummarizer <logfile> [--output <file>] [--format <text|json>]\n\n";
+    std::cout << "Options:\n";
+    std::cout << "  --output    Specify output file (default: console)\n";
+    std::cout << "  --format    Output format: text or json (default: text)\n";
+    std::cout << "  --help      Show this help message\n";
+}
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <log_file_path>" << std::endl;
-        return 1;
+    if (argc < 2 || std::string(argv[1]) == "--help") {
+        printHelp();
+        return 0;
     }
-
+    
     try {
+        std::string logFile = argv[1];
+        std::string outputFile;
+        std::string format = "text";
+        
+        // Parse command line arguments
+        for (int i = 2; i < argc; i++) {
+            std::string arg = argv[i];
+            if (arg == "--output" && i + 1 < argc) {
+                outputFile = argv[++i];
+            } else if (arg == "--format" && i + 1 < argc) {
+                format = argv[++i];
+            }
+        }
+        
         // Initialize components
         LogParser parser;
         OllamaClient ollama;
-        SecurityAnalyzer analyzer;
-        Summarizer summarizer(ollama);
-
-        // Load and parse log file
-        if (!parser.loadLogFile(argv[1])) {
-            std::cerr << "Failed to load log file: " << argv[1] << std::endl;
-            return 1;
+        ReportGenerator reporter;
+        
+        // Process logs
+        std::vector<LogEvent> events = parser.parseSyslog(logFile);
+        std::string summary = ollama.generateSummary(events);
+        
+        // Generate output
+        if (format == "json") {
+            reporter.outputJsonReport(summary, outputFile);
+        } else {
+            reporter.outputTextReport(summary, outputFile);
         }
-
-        std::vector<LogEntry> entries;
-        switch (parser.detectLogType()) {
-            case LogType::SYSLOG:
-                entries = parser.parseSyslog();
-                break;
-            case LogType::WINDOWS_EVENT:
-                entries = parser.parseWindowsEvents();
-                break;
-            default:
-                std::cerr << "Unsupported log format" << std::endl;
-                return 1;
-        }
-
-        // Analyze security events
-        auto securityEvents = analyzer.analyze(entries);
-
-        // Generate and display summary
-        std::string report = summarizer.generateReport(securityEvents);
-        std::cout << "\n=== SECURITY EVENT SUMMARY ===\n";
-        std::cout << report << "\n";
-
+        
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
-
+    
     return 0;
 }

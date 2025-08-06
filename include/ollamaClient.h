@@ -3,22 +3,22 @@
 
 #include <string>
 #include <vector>
-#include <curl/curl.h>
+#include "logParser.h"
 
 class OllamaClient {
 public:
-    explicit OllamaClient(const std::string& baseUrl = "http://localhost:11434");
-    ~OllamaClient();
-
-    std::string generateSummary(const std::string& prompt, const std::string& model = "llama3");
-    std::string analyzeSecurityEvents(const std::vector<std::string>& events);
-
+    OllamaClient(const std::string& baseUrl = "http://localhost:11434");
+    
+    std::string generateSummary(const std::vector<LogEvent>& events);
+    std::string analyzeThreats(const std::vector<LogEvent>& events);
+    
 private:
     std::string baseUrl;
-    CURL* curl;
-
-    static size_t writeCallback(void* contents, size_t size, size_t nmemb, std::string* s);
-    std::string makeRequest(const std::string& endpoint, const std::string& jsonData);
+    std::string modelName;
+    
+    std::string sendPrompt(const std::string& prompt);
+    std::string buildSecurityPrompt(const std::vector<LogEvent>& events);
+    std::string formatEventsForPrompt(const std::vector<LogEvent>& events);
 };
 
 #endif // OLLAMA_CLIENT_H

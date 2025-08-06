@@ -1,43 +1,31 @@
 #ifndef LOG_PARSER_H
 #define LOG_PARSER_H
 
-#include <string>
 #include <vector>
-#include <map>
+#include <string>
+#include <fstream>
 
-enum class LogType {
-    SYSLOG,
-    WINDOWS_EVENT,
-    UNKNOWN
-};
-
-struct LogEntry {
+struct LogEvent {
     std::string timestamp;
-    std::string source;
+    std::string host;
+    std::string service;
     std::string message;
-    std::map<std::string, std::string> details;
-    int severity;
+    int eventId;
+    bool isSecurityRelevant;
 };
 
 class LogParser {
 public:
     LogParser();
     ~LogParser();
-
-    bool loadLogFile(const std::string& filePath);
-    LogType detectLogType();
-    std::vector<LogEntry> parseSyslog();
-    std::vector<LogEntry> parseWindowsEvents();
+    
+    std::vector<LogEvent> parseSyslog(const std::string& filePath);
+    std::vector<LogEvent> parseWindowsEventLog(const std::string& filePath);
     
 private:
-    std::string logContent;
-    LogType currentType;
-
-    // Add these method declarations
-    void extractSyslogDetails(LogEntry& entry);
-    int estimateWindowsEventSeverity(int eventId);
-    bool isWindowsEventLog(const std::string& content);
-    std::vector<std::string> splitSyslogLine(const std::string& line);
+    void classifyEvent(LogEvent& event);
+    bool isSecurityRelevant(const std::string& message);
+    int extractEventId(const std::string& message);
 };
 
 #endif // LOG_PARSER_H
