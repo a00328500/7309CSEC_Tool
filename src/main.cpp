@@ -40,11 +40,36 @@ int main(int argc, char* argv[]) {
         OllamaClient ollama;
         ReportGenerator reporter;
         
-        // Process logs
-        std::vector<LogEvent> events = parser.parseSyslog(logFile);
+        // Process logs based on file type
+        std::vector<LogEvent> events;
+        size_t evtxPos = logFile.find(".evtx");
+        size_t logPos = logFile.find(".log");
+        
+        if (evtxPos != std::string::npos && evtxPos == logFile.length() - 5) {
+            std::cout << "Processing Windows Event Log..." << std::endl;
+            events = parser.parseWindowsEventLog(logFile);
+        } else if (logPos != std::string::npos && logPos == logFile.length() - 4) {
+            std::cout << "Processing Syslog..." << std::endl;
+            events = parser.parseSyslog(logFile);
+        } else {
+            // Try to auto-detect by attempting syslog first
+            try {
+                std::cout << "Attempting to parse as Syslog..." << std::endl;
+                events = parser.parseSyslog(logFile);
+            } catch (const std::exception& e) {
+                std::cerr << "Syslog parsing failed: " << e.what() << std::endl;
+                std::cerr << "Attempting to parse as Windows Event Log..." << std::endl;
+                events = parser.parseWindowsEventLog(logFile);
+            }
+        }
+        
+        if (events.empty()) {
+            std::cerr << "Warning: No events were parsed from the log file." << std::endl;
+        }
+        
+        // Generate summary and output report
         std::string summary = ollama.generateSummary(events);
         
-        // Generate output
         if (format == "json") {
             reporter.outputJsonReport(summary, outputFile);
         } else {
