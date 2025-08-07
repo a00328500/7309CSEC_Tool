@@ -4,9 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${vcpkgRoot}/x64-windows/include",
-                "${vcpkgRoot}/installed/x64-windows/include/json",
-                "${vcpkgRoot}/packages/jsoncpp_x64-windows/include"
+                "${vcpkgRoot}/x64-windows/include"
             ],
             "defines": [
                 "_DEBUG",
