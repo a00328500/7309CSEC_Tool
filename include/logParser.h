@@ -1,31 +1,27 @@
 #ifndef LOG_PARSER_H
 #define LOG_PARSER_H
 
-#include <vector>
 #include <string>
-#include <fstream>
-
-struct LogEvent {
-    std::string timestamp;
-    std::string host;
-    std::string service;
-    std::string message;
-    int eventId;
-    bool isSecurityRelevant;
-};
+#include <vector>
+#include <map>
 
 class LogParser {
 public:
-    LogParser();
-    ~LogParser();
+    explicit LogParser(const std::string& logFilePath);
+    ~LogParser() = default;
     
-    std::vector<LogEvent> parseSyslog(const std::string& filePath);
-    std::vector<LogEvent> parseWindowsEventLog(const std::string& filePath);
+    void parse();
+    std::vector<std::string> getSecurityRelevantLogs() const;
+    std::map<std::string, int> getEventCounts() const;
+    std::string getLogSummary() const;
     
 private:
-    void classifyEvent(LogEvent& event);
-    bool isSecurityRelevant(const std::string& message);
-    int extractEventId(const std::string& message);
+    std::string logFilePath;
+    std::vector<std::string> securityRelevantLogs;
+    std::map<std::string, int> eventCounts;
+    
+    void analyzeLogEntry(const std::string& entry);
+    void countEventTypes(const std::string& entry);
 };
 
 #endif // LOG_PARSER_H

@@ -1,73 +1,61 @@
-#include "logParser.h"
-#include <regex>
-#include <iostream>
+#include "../include/LogParser.h"
+#include "../include/utils.h"
+#include <fstream>
+#include <algorithm>
 
-LogParser::LogParser() {}
-LogParser::~LogParser() {}
+LogParser::LogParser(const std::string& logFilePath) : logFilePath(logFilePath) {}
 
-std::vector<LogEvent> LogParser::parseSyslog(const std::string& filePath) {
-    std::vector<LogEvent> events;
-    std::ifstream file(filePath);
+void LogParser::parse() {
+    std::ifstream logFile(logFilePath);
+    if (!logFile.is_open()) {
+        throw std::runtime_error("Failed to open log file: " + logFilePath);
+    }
+    
     std::string line;
-    
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open log file: " + filePath);
+    while (std::getline(logFile, line)) {
+        analyzeLogEntry(line);
+        countEventTypes(line);
     }
     
-    std::regex syslogRegex(R"((\w{3}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})\s(\S+)\s(\S+):\s(.*))");
-    
-    while (std::getline(file, line)) {
-        std::smatch matches;
-        if (std::regex_match(line, matches, syslogRegex)) {
-            LogEvent event;
-            event.timestamp = matches[1].str();
-            event.host = matches[2].str();
-            event.service = matches[3].str();
-            event.message = matches[4].str();
-            event.eventId = extractEventId(event.message);
-            event.isSecurityRelevant = isSecurityRelevant(event.message);
-            
-            events.push_back(event);
-        }
-    }
-    
-    return events;
+    logFile.close();
 }
 
-std::vector<LogEvent> LogParser::parseWindowsEventLog(const std::string& filePath) {
-    // Implementation would use libevtx in a real project
-    std::vector<LogEvent> events;
-    // Placeholder for demo purposes
-    return events;
+void LogParser::analyzeLogEntry(const std::string& entry) {
+    if (utils::isPotentialThreat(entry)) {
+        securityRelevantLogs.push_back(entry);
+    }
 }
 
-bool LogParser::isSecurityRelevant(const std::string& message) {
-    std::vector<std::string> securityKeywords = {
-        "failed", "password", "login", "attack", "malware",
-        "intrusion", "breach", "unauthorized", "root", "admin",
-        "privilege", "escalation", "injection", "xss", "sql",
-        "brute force", "ddos", "exploit"
-    };
-    
-    std::string lowerMsg = message;
-    std::transform(lowerMsg.begin(), lowerMsg.end(), lowerMsg.begin(), ::tolower);
-    
-    for (const auto& keyword : securityKeywords) {
-        if (lowerMsg.find(keyword) != std::string::npos) {
-            return true;
-        }
+void LogParser::countEventTypes(const std::string& entry) {
+    // Simple event type counting - in a real implementation, this would be more sophisticated
+    if (entry.find("login") != std::string::npos) {
+        eventCounts["login"]++;
+    } else if (entry.find("failed") != std::string::npos) {
+        eventCounts["failed_attempt"]++;
+    } else if (entry.find("error") != std::string::npos) {
+        eventCounts["error"]++;
+    } else if (entry.find("warning") != std::string::npos) {
+        eventCounts["warning"]++;
+    } else {
+        eventCounts["other"]++;
     }
-    
-    return false;
 }
 
-int LogParser::extractEventId(const std::string& message) {
-    std::regex idRegex(R"(event id (\d+))", std::regex_constants::icase);
-    std::smatch matches;
+std::vector<std::string> LogParser::getSecurityRelevantLogs() const {
+    return securityRelevantLogs;
+}
+
+std::map<std::string, int> LogParser::getEventCounts() const {
+    return eventCounts;
+}
+
+std::string LogParser::getLogSummary() const {
+    std::string summary = "Log Analysis Summary:\n";
+    summary += "Total security-relevant events: " + std::to_string(securityRelevantLogs.size()) + "\n";
     
-    if (std::regex_search(message, matches, idRegex)) {
-        return std::stoi(matches[1].str());
+    for (const auto& [event, count] : eventCounts) {
+        summary += event + ": " + std::to_string(count) + "\n";
     }
     
-    return -1;
+    return summary;
 }
