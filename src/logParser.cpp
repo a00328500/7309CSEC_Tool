@@ -44,41 +44,66 @@ std::vector<LogEvent> LogParser::parseWindowsEventLog(const std::string& filePat
         throw std::runtime_error("Failed to open Windows Event Log file: " + filePath);
     }
 
-    std::string line;
-    int lineCount = 0;
-    const int maxLinesForDemo = 1000;
+    // Read the entire file into a buffer
+    file.seekg(0, std::ios::end);
+    size_t fileSize = file.tellg();
+    file.seekg(0, std::ios::beg);
     
-    while (std::getline(file, line) && lineCount++ < maxLinesForDemo) {
-        if (line.find('\0') != std::string::npos) continue;
-        
-        size_t eventStart = line.find("<Event");
-        if (eventStart == std::string::npos) continue;
+    std::vector<char> buffer(fileSize);
+    file.read(buffer.data(), fileSize);
+    file.close();
 
+    // Convert buffer to string for processing
+    std::string content(buffer.begin(), buffer.end());
+
+    // Improved XML parsing for EVTX
+    size_t pos = 0;
+    while ((pos = content.find("<Event", pos)) != std::string::npos) {
         LogEvent event;
         event.timestamp = "N/A";
         event.host = "localhost";
         event.service = "Windows";
 
-        size_t dataStart = line.find("<EventData>");
-        size_t dataEnd = line.find("</EventData>");
+        // Find EventData section
+        size_t dataStart = content.find("<EventData>", pos);
+        size_t dataEnd = content.find("</EventData>", pos);
         
         if (dataStart != std::string::npos && dataEnd != std::string::npos && dataEnd > dataStart) {
-            event.message = line.substr(dataStart + 11, dataEnd - dataStart - 11);
-            size_t tagPos;
-            while ((tagPos = event.message.find('<')) != std::string::npos) {
-                size_t endTag = event.message.find('>', tagPos);
-                if (endTag != std::string::npos) {
-                    event.message.erase(tagPos, endTag - tagPos + 1);
+            std::string eventData = content.substr(dataStart + 11, dataEnd - dataStart - 11);
+            
+            // Extract message data
+            std::string message;
+            size_t dataPos = 0;
+            while ((dataPos = eventData.find("<Data Name=", dataPos)) != std::string::npos) {
+                size_t valueStart = eventData.find('>', dataPos) + 1;
+                size_t valueEnd = eventData.find("</Data>", valueStart);
+                if (valueEnd != std::string::npos) {
+                    message += eventData.substr(valueStart, valueEnd - valueStart) + "; ";
+                    dataPos = valueEnd;
                 }
             }
+            
+            if (!message.empty()) {
+                event.message = message;
+            } else {
+                // Fallback to raw data if no Data tags found
+                event.message = eventData;
+            }
         } else {
-            event.message = line.substr(eventStart);
+            // Fallback to raw event if no EventData found
+            size_t eventEnd = content.find("</Event>", pos);
+            if (eventEnd != std::string::npos) {
+                event.message = content.substr(pos, eventEnd - pos);
+            }
         }
 
         event.eventId = extractEventId(event.message);
         event.isSecurityRelevant = isSecurityRelevant(event.message);
         
         events.push_back(event);
+        pos = content.find("</Event>", pos);
+        if (pos == std::string::npos) break;
+        pos += 8; // length of "</Event>"
     }
     
     return events;

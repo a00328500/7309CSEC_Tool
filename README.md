@@ -29,4 +29,4 @@ A tool for analyzing system logs with the help of a local LLM via OLLAMA to iden
 
 ## How to run
 1. Make sure you are in the path ~\7309CSEC_Tool\build\Release
-2. Run the following: ./logsummarizer "path where the log file is saved" "title of output".txt
+2. Run the following: ./logsummarizer "path where the log file is saved" --format (json or text | default is text) --output "title".(json/text)
