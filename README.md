@@ -19,6 +19,8 @@ A tool for analyzing system logs with the help of a local LLM via OLLAMA to iden
 - An LLM model downloaded in OLLAMA (e.g., `ollama pull llama3`)
 - zlib
 
+- Cmake, libcurl, zlib, must be installed in the same directory C:/dev/vcpkg
+
 ## How to build
 1. mkdir build
 2. cd build
