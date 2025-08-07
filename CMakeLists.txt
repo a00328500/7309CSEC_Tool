@@ -8,7 +8,6 @@ project(CyberLogSummarizer VERSION 1.0.0 LANGUAGES CXX)
 # [1] Compiler settings
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 
 # [2] Source files
 set(SOURCES
@@ -33,14 +32,18 @@ target_include_directories(logsummarizer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-# [6] Find dependencies
-find_package(CURL REQUIRED)
+# [6] Dependency Configuration ========================================
+
+# --- ZLIB ---
 find_package(ZLIB REQUIRED)
 
-# [7] JsonCpp Configuration (Updated)
+# --- CURL ---
+find_package(CURL REQUIRED)
+
+# --- JsonCpp (Updated Step 3) ---
 find_package(Jsoncpp REQUIRED)
 
-# Handle different target names across versions
+# Handle different JsonCpp target names
 if(TARGET Jsoncpp::Jsoncpp)
     set(JSONCPP_TARGET Jsoncpp::Jsoncpp)
 elseif(TARGET jsoncpp_lib)
@@ -48,28 +51,14 @@ elseif(TARGET jsoncpp_lib)
 elseif(TARGET JsonCpp::JsonCpp)
     set(JSONCPP_TARGET JsonCpp::JsonCpp)
 else()
-    message(FATAL_ERROR "JsonCpp package found but no valid target detected. "
-        "Found JsonCpp version: ${Jsoncpp_VERSION}")
+    message(FATAL_ERROR "JsonCpp package found but no valid target detected")
 endif()
 
 message(STATUS "Using JsonCpp target: ${JSONCPP_TARGET}")
 
-# [8] Link libraries
+# [7] Link libraries
 target_link_libraries(logsummarizer PRIVATE
     CURL::libcurl
-    ${JSONCPP_TARGET}
+    ${JSONCPP_TARGET}  # Uses the detected target name
     ZLIB::ZLIB
 )
-
-# [9] Installation (optional)
-install(TARGETS logsummarizer
-    RUNTIME DESTINATION bin
-    ARCHIVE DESTINATION lib
-)
-
-# [10] Testing (optional)
-option(BUILD_TESTS "Build test cases" OFF)
-if(BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif()
