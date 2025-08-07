@@ -26,3 +26,7 @@ A tool for analyzing system logs with the help of a local LLM via OLLAMA to iden
 2. cd build
 3. cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE="C:\dev\vcpkg\scripts\buildsystems\vcpkg.cmake"
 4. cmake --build . --config Release
+
+## How to run
+1. Make sure you are in the path ~\7309CSEC_Tool\build\Release
+2. Run the following: ./logsummarizer "path where the log file is saved" "title of output".txt
