@@ -9,7 +9,7 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::stri
     try {
         s->append((char*)contents, newLength);
         return newLength;
-    } catch(std::bad_alloc &e) {
+    } catch(std::bad_alloc &) {
         return 0;
     }
 }

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <algorithm>
 #include "logParser.h"
 #include "ollamaClient.h"
 #include "reportGenerator.h"
@@ -36,45 +37,35 @@ int main(int argc, char* argv[]) {
         }
         
         // Initialize components
+        std::cout << "Initializing components...\n";
         LogParser parser;
         OllamaClient ollama;
         ReportGenerator reporter;
         
-        // Process logs based on file type
-        std::vector<LogEvent> events;
-        size_t evtxPos = logFile.find(".evtx");
-        size_t logPos = logFile.find(".log");
+        // Process logs
+        std::cout << "Attempting to parse log file: " << logFile << "\n";
+        std::vector<LogEvent> events = parser.parseSyslog(logFile);
         
-        if (evtxPos != std::string::npos && evtxPos == logFile.length() - 5) {
-            std::cout << "Processing Windows Event Log..." << std::endl;
-            events = parser.parseWindowsEventLog(logFile);
-        } else if (logPos != std::string::npos && logPos == logFile.length() - 4) {
-            std::cout << "Processing Syslog..." << std::endl;
-            events = parser.parseSyslog(logFile);
-        } else {
-            // Try to auto-detect by attempting syslog first
-            try {
-                std::cout << "Attempting to parse as Syslog..." << std::endl;
-                events = parser.parseSyslog(logFile);
-            } catch (const std::exception& e) {
-                std::cerr << "Syslog parsing failed: " << e.what() << std::endl;
-                std::cerr << "Attempting to parse as Windows Event Log..." << std::endl;
-                events = parser.parseWindowsEventLog(logFile);
-            }
+        std::cout << "Successfully parsed " << events.size() << " log events\n";
+        if (!events.empty()) {
+            size_t securityEvents = std::count_if(events.begin(), events.end(), 
+                [](const LogEvent& e) { return e.isSecurityRelevant; });
+            std::cout << securityEvents << " security-relevant events found\n";
         }
         
-        if (events.empty()) {
-            std::cerr << "Warning: No events were parsed from the log file." << std::endl;
-        }
-        
-        // Generate summary and output report
+        // Generate summary
+        std::cout << "Generating summary...\n";
         std::string summary = ollama.generateSummary(events);
         
+        // Generate output
+        std::cout << "Creating report...\n";
         if (format == "json") {
             reporter.outputJsonReport(summary, outputFile);
         } else {
             reporter.outputTextReport(summary, outputFile);
         }
+        
+        std::cout << "Report generation complete!\n";
         
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
