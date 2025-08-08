@@ -15,6 +15,15 @@ void printHelp() {
     std::cout << "  --help      Show this help message\n";
 }
 
+std::vector<LogEvent> parseLogFile(LogParser& parser, const std::string& filePath) {
+    // Simple file type detection by extension
+    if (filePath.size() > 4 && filePath.substr(filePath.size() - 4) == ".csv") {
+        return parser.parseCSV(filePath);
+    }
+    // Default to syslog parsing
+    return parser.parseSyslog(filePath);
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 2 || std::string(argv[1]) == "--help") {
         printHelp();
@@ -44,7 +53,7 @@ int main(int argc, char* argv[]) {
         
         // Process logs
         std::cout << "Attempting to parse log file: " << logFile << "\n";
-        std::vector<LogEvent> events = parser.parseSyslog(logFile);
+        std::vector<LogEvent> events = parseLogFile(parser, logFile);
         
         std::cout << "Successfully parsed " << events.size() << " log events\n";
         if (!events.empty()) {

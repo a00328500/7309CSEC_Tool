@@ -21,6 +21,7 @@ public:
     
     std::vector<LogEvent> parseSyslog(const std::string& filePath);
     std::vector<LogEvent> parseWindowsEventLog(const std::string& filePath);
+    std::vector<LogEvent> parseCSV(const std::string& filePath);  // New method
     
 private:
     void classifyEvent(LogEvent& event);
